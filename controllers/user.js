@@ -76,7 +76,11 @@ exports.create = async (req, res, next) => {
         // Save into the data base
         user = await user.save({fields: ["username", "password", "salt"]});
         console.log('Success: User created successfully.');
-        res.redirect('/users/' + user.id);
+        if (req.session.loginUser) {
+            res.redirect('/users/' + user.id);
+        } else {
+            res.redirect('/login'); // Redirection to the login page
+        }
     } catch (error) {
         if (error instanceof Sequelize.UniqueConstraintError) {
             console.log(`Error: User "${username}" already exists.`);
@@ -139,6 +143,12 @@ exports.update = async (req, res, next) => {
 exports.destroy = async (req, res, next) => {
 
     try {
+        // Deleting logged user.
+        if (req.session.loginUser?.id === req.load.user.id) {
+            // Close the user session
+            delete req.session.loginUser;
+        }
+
         await req.load.user.destroy()
         console.log('Success: User deleted successfully.');
         res.redirect('/users');
